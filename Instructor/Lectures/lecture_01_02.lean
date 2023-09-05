@@ -113,7 +113,7 @@ first being a *function* (from String to String), the second
 being a String, with the function finally returning a String
 result. 
 -/
-#check (String → String) → String → String
+#check (String → String) → String → String 
 
 /-!
 ## Function Terms

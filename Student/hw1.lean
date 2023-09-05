@@ -55,8 +55,16 @@ the String.length function?
 Answer here:
 -/
 
+-- String -> Nat (takes a String and returns a nat)
+
+-- def s := "hello"
+
+-- #eval s.length (takes "hello" and yields 5)
 
 /-!
+
+
+
 ## 2: Define a Boolean operation
 The *implies* function from Boolean algebra takes 
 two Boolean values as its arguments and returns a 
@@ -73,6 +81,18 @@ similar Boolean operators, such as *xor* and *nor*.
 
 -- Write your code here
 
+def imp : Bool -> Bool -> Bool
+| true, true => true
+| true, false => false
+| false, true => true 
+| false, false => true
+
+-- def xor : Bool -> Bool -> Bool
+-- | true, true => false
+-- | true, false => true
+-- | false, true => true
+-- | false, false => false
+
 /-!
 ## Problem 3: Prove correctness by exhaustive testing
 Prove that your implementation of imp is corret
@@ -83,7 +103,10 @@ end of each #eval line, as we've done in class.
 -/
 
 -- Write your answers here:
-#eval _   -- etc
+#eval imp true true --true
+#eval imp true false --false
+#eval imp false true --true
+#eval imp false false --true
 
 /-!
 ## 4. Glue together two compatible functions
@@ -141,11 +164,16 @@ Define your function here. When you've got it
 right, the following test cases should pass.
 -/
 
--- Now complete the implementation of glue_funs'
-def glue_funs' : _
-| _ => _
+def glue_funs' (g : Nat -> Bool) 
+(f : String -> Nat) 
+(s : String) : Bool := 
+g (f s)
 
-#eval glue_funs' isEven String.length "Hello"  -- false
+-- Now complete the implementation of glue_funs'
+-- def glue_funs' : _
+-- | _ => _
+
+#eval glue_funs' isEven String.length "Hello"  -- false yay they're correct
 #eval glue_funs' isEven String.length "Hello!" -- true
 
 /-!
@@ -188,12 +216,22 @@ of the type arguments are implicit and inferred.
 -/
 
 -- Implement glue_funs here
-def glue_funs : _
-| _ => _
+def glue_funs {α β y : Type }
+(g : β -> y)
+(f : α -> β)
+(a : α) : y :=
+g (f a)
+
+
+-- the comment blocked code below is just for referencing 
+-- formatting style + copying characters pls ignore 
+
+-- def apply2' : { α  : Type } → (α → α) → α → α 
+-- | _, f, a => f (f a)
 
 -- test cases
 #eval glue_funs isEven String.length "Hello"  -- false
-#eval glue_funs isEven String.length "Hello!" -- true
+#eval glue_funs isEven String.length "Hello!" -- true yayyyy 
 
 /-!
 ## 6. Show that apply2 is a special case
@@ -210,7 +248,34 @@ as applying square after double?
 
 -- Copy the double and square functions here
 
+def double : Nat → Nat
+| n => 2 * n
+
+
+def square : Nat → Nat
+| n => n^2
+
+
 -- Write your tests here; include expected results
 
-#eval _
-#eval _
+#eval glue_funs double square 5 
+--expected: 50 -> why? first, (square 5) is passed, returning 25, 
+--which is passed to double (2 * 25), yielding 50
+
+#eval glue_funs square double 5
+--expected: 100 -> why? first, (double 5) is passed returning 10,
+--which is then passed to square (10^2), yielding 100
+
+--NOT the same -> first is double (square 5) and second is square (double 5)
+
+
+-- ignore this pls just referencing notes without switching tabs thanks
+
+-- def apply2' : { α : Type } → (α → α) → α → α 
+-- | _, f, a => f (f a)
+
+-- -- Now the type arguments are implicit!
+-- #eval apply2' Nat.succ 0   -- expect 2
+-- #eval apply2' double 1     -- expect 4
+-- #eval apply2' square 2     -- expect 16
+-- #eval apply2' exclaim "Hello" -- Hello!!
