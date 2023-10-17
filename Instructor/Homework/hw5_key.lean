@@ -32,7 +32,7 @@ great idea that we reached at the end of lecture_09.
 More concretely every time you see function type that
 looks like (α → Empty) in what follows, you can read 
 it as saying *there is no value of type α*. Second, if 
-youwant to *return* a result of type (α → Empty), to
+you want to *return* a result of type (α → Empty), to
 showing that there can be no α value, then you need 
 to return a *function*; and you will often want to do
 so by writing the return value as a lambda expression. 
@@ -43,18 +43,8 @@ so by writing the return value as a lambda expression.
 
 Suppose you don't have cheese OR you don't have jam. 
 Then it must be that you don't have (cheese AND jam).
-Before you go on, think about why this has to be true.
-Here's a proof of it in the form of a function. The 
-function takes jam and cheese implicitly as types.
-It takes a value that either indicates there is no
-jam, or a value that indicates that there's no cheese,
-and you are to construct a value that shows that there
-can be no jam and cheese. It works by breaking the first
-argument into two cases: either a proof that there is
-no jam (there are no values of this type), or a proof
-that there is no cheese, and shows *in either case*
-that there can be no jam AND cheese. 
 -/
+
 
 /-!
 ## New Addition: no (α : Type) := α → Empty
@@ -76,8 +66,8 @@ doing so makes the logical meaning clearer.
 def not_either_not_both { jam cheese } :
   ((no jam) ⊕ (no cheese)) → 
   (no (jam × cheese)) 
-| Sum.inl nojam => (fun _ => _)
-| Sum.inr _ => _
+| Sum.inl nojam => (fun (j, c) => nojam j)
+| Sum.inr nocheese => (fun (j, c) => nocheese c)
 
 /-!
 ### #2: Not One or Not the Other Implies Not Both
@@ -91,8 +81,8 @@ names, *jam* and *cheese*.
 -/
 
 def demorgan1  {α β : Type} : ((α → Empty) ⊕ (β → Empty)) → (α × β → Empty)  
-| (Sum.inl noa) => _
-| (Sum.inr nob) => _
+| (Sum.inl noa) => fun (a,b) => noa a
+| (Sum.inr nob) => fun (a,b) => nob b
 
 /-!
 ### #3: Not Either Implies Not One And Not The Other
@@ -106,8 +96,8 @@ given *any* types, α and β,
 -/
 
 def demorgan2 {α β : Type} : (α ⊕ β → Empty) → ((α → Empty) × (β → Empty))
-| noaorb => _
-
+| noaorb => (fun a => noaorb (Sum.inl a), fun b => noaorb (Sum.inr b))
+-- STRONG HINT: Use top-down type-guided refinement
 
 /-!
 ### #4: Not One And Not The Other Implies Not One Or The Other 
@@ -119,7 +109,9 @@ Hint: You might want to use an explicit match expression
 in writing your solution.
 -/
 def demorgan3 {α β : Type} : ((α → Empty) × (β → Empty)) → ((α ⊕ β) → Empty)  
-| _ => _
+| (noa, nob) => fun aorb => match aorb with
+    | Sum.inl a => noa a
+    | Sum.inr b => nob b
 
 /-!
 ## PART 2
@@ -149,6 +141,16 @@ matching.
 
 -- Here
 
+-- Using explicit constructor patterns
+def pred' : Nat → Nat
+| Nat.zero => Nat.zero
+| Nat.succ n' => n'
+
+-- Using Lean-defined notations for constructor patterns
+def pred : Nat → Nat
+| 0 => 0              -- 0 is notation for Nat.zero
+| (n' + 1) => n'      -- (n' + 1) is notation for Nat.succ n'
+
 
 
 -- Test cases
@@ -166,7 +168,15 @@ returns the same doll as *d3*.
 
 -- Answer here
 
+-- First, add definition of Doll type
+inductive Doll : Type
+| solid
+| shell (d : Doll)
+open Doll
 
+def mk_doll : Nat → Doll
+| 0 => solid
+| (n' + 1) => shell (mk_doll n')
 
 -- test cases
 #check mk_doll 3
@@ -185,7 +195,7 @@ def nat_eq : Nat → Nat → Bool
 | 0, 0 => true
 | 0, n' + 1 => false
 | n' + 1, 0 => false
-| (n' + 1), (m' + 1) => _
+| (n' + 1), (m' + 1) => nat_eq n' m'
 
 -- a few tests
 #eval nat_eq 0 0
@@ -210,6 +220,17 @@ result *in each case*.
 
 -- Here
 
+def nat_le : Nat → Nat → Bool
+| 0, _ => true
+| n' + 1, 0 => false
+| (n' + 1), (m' + 1) => nat_le n' m'
+
+-- a few tests just to check for sane results
+#eval nat_le 0 0
+#eval nat_le 0 1
+#eval nat_le 1 1
+#eval nat_le 1 0
+
 /-!
 ###  #5. Nat Number Addition 
 
@@ -219,7 +240,7 @@ a natural number addition function.
 
 def add : Nat → Nat → Nat
 | m, 0 => m
-| m, (Nat.succ n') => _   -- hint: recursion
+| m, (Nat.succ n') => 1 + add m n'   -- hint: recursion
 
 
 -- Some test cases
@@ -244,7 +265,14 @@ test cases to show that it appears to be working.
 
 def mul : Nat → Nat → Nat
 | m, 0 => 0
-| m, (Nat.succ n') => add (_) (_)
+| m, (Nat.succ n') => add (m) (mul m n')
+
+-- A few test cases
+
+#eval mul 0 5 -- expect 5
+#eval mul 5 0 -- expect 5
+#eval mul 5 4 -- expect 20
+#eval mul 4 5 -- expect 20
 
 /-!
 ### Sum Binary Nat Function Over Range 0 to n 
@@ -262,7 +290,10 @@ to and including n.
 -/
 
 def sum_f : (Nat → Nat) → Nat → Nat 
-| f, 0 => _
-| f, n' + 1 => _
+| f, 0 => f 0
+| f, n' + 1 => f (n' + 1) + sum_f f n' 
+
+#eval sum_f (fun n => n) 10   -- expect 55
+#eval sum_f (fun n => n^2) 10 -- is 385 correct? 
 
 
